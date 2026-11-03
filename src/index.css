@@ -1,0 +1,13 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+html, body, #root { height: 100%; }
+body {
+  background-color: #f1f5f9;
+  color: #0f172a;
+  font-family: "Noto Serif SC", ui-serif, Georgia, serif;
+  background-image:
+    radial-gradient(circle at 20% 10%, rgba(16,185,129,0.06), transparent 40%),
+    radial-gradient(circle at 80% 90%, rgba(99,102,241,0.06), transparent 40%);
+}
