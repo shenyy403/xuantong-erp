@@ -64,7 +64,7 @@ app.post('/api/register', async (c) => {
 
 app.post('/api/login', async (c) => {
   const { email, password } = await c.req.json()
-  const res = await pool.query('SELECT id, email, nickname FROM users WHERE email = $1 AND password = $2', [email, password])
+  const res = await pool.query('SELECT id, email, nickname, role FROM users WHERE email = $1 AND password = $2', [email, password])
   if (res.rows.length === 0) return c.json({ error: '邮箱或密码错误' }, 401)
   return c.json(res.rows[0])
 })
