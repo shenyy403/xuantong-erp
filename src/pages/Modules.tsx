@@ -1,26 +1,29 @@
 import { useEffect, useState } from 'react'
-import { supabase } from '../lib/supabase'
+import { api } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
 
 export default function Modules() {
-  const { profile } = useAuth()
+  const { user } = useAuth()
   const [items, setItems] = useState<any[]>([])
   const [name, setName] = useState('')
   const [color, setColor] = useState('#10b981')
 
   const load = async () => {
-    if (!profile) return
-    const { data } = await supabase.from('modules').select('*').eq('user_id', profile.id).order('sort_order')
-    setItems(data ?? [])
+    if (!user) return
+    const data = await api.get(`/modules/${user.id}`)
+    setItems(data)
   }
-  useEffect(() => { load() }, [profile])
+  useEffect(() => { load() }, [user])
 
   const add = async () => {
-    if (!profile || !name.trim()) return
-    await supabase.from('modules').insert({ user_id: profile.id, name: name.trim(), color, sort_order: items.length })
+    if (!user || !name.trim()) return
+    await api.post('/modules', { user_id: user.id, name: name.trim(), color, sort_order: 0 })
     setName(''); load()
   }
-  const remove = async (id: string) => { await supabase.from('modules').delete().eq('id', id); load() }
+  const remove = async (id: string) => { 
+    await api.del(`/modules/${id}`)
+    load() 
+  }
 
   return (
     <div className="max-w-2xl space-y-5">
