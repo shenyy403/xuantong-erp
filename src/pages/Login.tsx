@@ -13,8 +13,6 @@ export default function Login() {
   const nav = useNavigate()
   const { user } = useAuth()
 
-  if (user) { nav('/'); return null }
-
   const submit = async (e: React.FormEvent) => {
     e.preventDefault()
     setErr('')
