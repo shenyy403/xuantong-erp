@@ -1,10 +1,10 @@
 import { useEffect, useState } from 'react'
 import { format } from 'date-fns'
-import { supabase } from '../lib/supabase'
+import { api } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
 
 export default function Tasks() {
-  const { profile } = useAuth()
+  const { user } = useAuth()
   const [date, setDate] = useState(format(new Date(), 'yyyy-MM-dd'))
   const [tasks, setTasks] = useState<any[]>([])
   const [modules, setModules] = useState<any[]>([])
@@ -12,22 +12,29 @@ export default function Tasks() {
   const [moduleId, setModuleId] = useState<string>('')
 
   const load = async () => {
-    if (!profile) return
-    const [{ data: t }, { data: m }] = await Promise.all([
-      supabase.from('tasks').select('*').eq('user_id', profile.id).eq('task_date', date).order('created_at'),
-      supabase.from('modules').select('*').eq('user_id', profile.id).order('sort_order'),
+    if (!user) return
+    const [t, m] = await Promise.all([
+      api.get(`/tasks/${user.id}`),
+      api.get(`/modules/${user.id}`)
     ])
-    setTasks(t ?? []); setModules(m ?? [])
+    setTasks(t.filter((x:any) => x.task_date === date))
+    setModules(m)
   }
-  useEffect(() => { load() }, [profile, date])
+  useEffect(() => { load() }, [user, date])
 
   const add = async () => {
-    if (!profile || !title.trim()) return
-    await supabase.from('tasks').insert({ user_id: profile.id, title: title.trim(), module_id: moduleId || null, task_date: date })
+    if (!user || !title.trim()) return
+    await api.post('/tasks', { user_id: user.id, title: title.trim(), module_id: moduleId || null, task_date: date, done: false })
     setTitle(''); load()
   }
-  const toggle = async (t: any) => { await supabase.from('tasks').update({ done: !t.done }).eq('id', t.id); load() }
-  const remove = async (id: string) => { await supabase.from('tasks').delete().eq('id', id); load() }
+  const toggle = async (t: any) => { 
+    await api.put(`/tasks/${t.id}`, { done: !t.done })
+    load() 
+  }
+  const remove = async (id: string) => { 
+    await api.del(`/tasks/${id}`)
+    load() 
+  }
 
   return (
     <div className="space-y-5">
