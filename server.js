@@ -1,6 +1,7 @@
 import { serve } from '@hono/node-server'
 import { Hono } from 'hono'
 import { cors } from 'hono/cors'
+import { serveStatic } from '@hono/node-server/serve-static'
 import pg from 'pg'
 
 const pool = new pg.Pool({
@@ -10,6 +11,14 @@ const pool = new pg.Pool({
 
 const app = new Hono()
 app.use('/*', cors())
+
+// 1. 托管前端打包后的静态文件
+app.use('/*', serveStatic({ root: './dist' }))
+
+// 2. 解决 React 路由刷新 404 问题（把所有非 API 请求都指回 index.html）
+app.get('*', serveStatic({ path: './dist/index.html' }))
+
+// --- 以下是你原来的 API 接口 ---
 
 // 初始化数据库表
 const initDB = async () => {
@@ -45,7 +54,6 @@ const initDB = async () => {
 }
 initDB().catch(console.error)
 
-// API 接口
 app.post('/api/register', async (c) => {
   const { email, password, nickname } = await c.req.json()
   try {
@@ -61,7 +69,6 @@ app.post('/api/login', async (c) => {
   return c.json(res.rows[0])
 })
 
-// 通用数据操作接口
 const handleCRUD = (table) => {
   app.get(`/api/${table}/:userId`, async (c) => {
     const res = await pool.query(`SELECT * FROM ${table} WHERE user_id = $1 ORDER BY id DESC`, [c.req.param('userId')])
@@ -93,7 +100,6 @@ handleCRUD('modules')
 handleCRUD('tasks')
 handleCRUD('countdowns')
 
-// 启动服务
 const port = process.env.PORT || 3000
 serve({ fetch: app.fetch, port }, (info) => {
   console.log(`Server running on port ${info.port}`)
