@@ -8,9 +8,9 @@ import Modules from './pages/Modules'
 import Countdowns from './pages/Countdowns'
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
-  const { session, loading } = useAuth()
+  const { user, loading } = useAuth()  // 把 session 改成 user
   if (loading) return <div className="p-10 text-center">加载中...</div>
-  if (!session) return <Navigate to="/login" replace />
+  if (!user) return <Navigate to="/login" replace />  // 这里也改成 user
   return <>{children}</>
 }
 
