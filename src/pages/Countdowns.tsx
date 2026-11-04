@@ -1,26 +1,29 @@
 import { useEffect, useState } from 'react'
-import { supabase } from '../lib/supabase'
+import { api } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
 
 export default function Countdowns() {
-  const { profile } = useAuth()
+  const { user } = useAuth()
   const [items, setItems] = useState<any[]>([])
   const [label, setLabel] = useState('')
   const [date, setDate] = useState('')
 
   const load = async () => {
-    if (!profile) return
-    const { data } = await supabase.from('countdowns').select('*').eq('user_id', profile.id).order('sort_order')
-    setItems(data ?? [])
+    if (!user) return
+    const data = await api.get(`/countdowns/${user.id}`)
+    setItems(data)
   }
-  useEffect(() => { load() }, [profile])
+  useEffect(() => { load() }, [user])
 
   const add = async () => {
-    if (!profile || !label.trim() || !date) return
-    await supabase.from('countdowns').insert({ user_id: profile.id, label: label.trim(), target_date: date, sort_order: items.length })
+    if (!user || !label.trim() || !date) return
+    await api.post('/countdowns', { user_id: user.id, label: label.trim(), target_date: date })
     setLabel(''); setDate(''); load()
   }
-  const remove = async (id: string) => { await supabase.from('countdowns').delete().eq('id', id); load() }
+  const remove = async (id: string) => { 
+    await api.del(`/countdowns/${id}`)
+    load() 
+  }
 
   return (
     <div className="max-w-2xl space-y-5">
