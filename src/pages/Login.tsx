@@ -1,6 +1,7 @@
 import { useState } from 'react'
-import { supabase } from '../lib/supabase'
+import { api } from '../lib/supabase'
 import { useNavigate } from 'react-router-dom'
+import { useAuth } from '../context/AuthContext'
 import Watermark from '../components/Watermark'
 
 export default function Login() {
@@ -10,21 +11,25 @@ export default function Login() {
   const [name, setName] = useState('')
   const [err, setErr] = useState('')
   const nav = useNavigate()
+  const { user } = useAuth()
+
+  if (user) { nav('/'); return null }
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault()
     setErr('')
-    if (mode === 'login') {
-      const { error } = await supabase.auth.signInWithPassword({ email, password: pw })
-      if (error) return setErr(error.message)
-      nav('/')
-    } else {
-      const { error } = await supabase.auth.signUp({
-        email, password: pw, options: { data: { display_name: name } }
-      })
-      if (error) return setErr(error.message)
-      alert('注册成功，请登录')
-      setMode('login')
+    try {
+      if (mode === 'login') {
+        const userData = await api.post('/login', { email, password: pw })
+        localStorage.setItem('xuantong_user', JSON.stringify(userData))
+        window.location.href = '/'
+      } else {
+        await api.post('/register', { email, password: pw, nickname: name })
+        alert('注册成功，请登录')
+        setMode('login')
+      }
+    } catch (e: any) {
+      setErr(e.message)
     }
   }
 
