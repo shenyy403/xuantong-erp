@@ -1,22 +1,30 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useState, useMemo } from 'react'
 import { Link } from 'react-router-dom'
 import { format, differenceInCalendarDays } from 'date-fns'
-import { supabase } from '../lib/supabase'
+import { api } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
 
 export default function Dashboard() {
-  const { profile } = useAuth()
+  const { user } = useAuth()
   const [tasks, setTasks] = useState<any[]>([])
   const [modules, setModules] = useState<any[]>([])
   const [countdowns, setCountdowns] = useState<any[]>([])
   const today = format(new Date(), 'yyyy-MM-dd')
 
   useEffect(() => {
-    if (!profile) return
-    supabase.from('tasks').select('*').eq('user_id', profile.id).eq('task_date', today).then(({ data }) => setTasks(data ?? []))
-    supabase.from('modules').select('*').eq('user_id', profile.id).order('sort_order').then(({ data }) => setModules(data ?? []))
-    supabase.from('countdowns').select('*').eq('user_id', profile.id).order('sort_order').then(({ data }) => setCountdowns(data ?? []))
-  }, [profile])
+    if (!user) return
+    const load = async () => {
+      const [t, m, c] = await Promise.all([
+        api.get(`/tasks/${user.id}`),
+        api.get(`/modules/${user.id}`),
+        api.get(`/countdowns/${user.id}`)
+      ])
+      setTasks(t.filter((x:any) => x.task_date === today))
+      setModules(m)
+      setCountdowns(c)
+    }
+    load()
+  }, [user])
 
   const doneCount = tasks.filter(t => t.done).length
   const moduleMap = useMemo(() => Object.fromEntries(modules.map(m => [m.id, m])), [modules])
